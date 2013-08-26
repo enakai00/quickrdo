@@ -36,10 +36,6 @@ function rdo_install {
         sed -i.bak 's/cluster-mechanism/ha-mechanism/' $qpidd_conf
     fi
 
-    # http://openstack.redhat.com/forum/discussion/188/resolved-failed-allinone-installation-fedora-18
-    yum install -y openstack-dashboard-2013.1.2-1.fc18 python-django-horizon-2013.1.2-1.fc18
-    yum update -y openstack-dashboard python-django-horizon
-
     packstack --allinone --nagios-install=n --os-swift-install=n
     rc=$?
 
