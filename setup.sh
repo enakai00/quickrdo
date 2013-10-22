@@ -74,6 +74,11 @@ echo "Installing RDO with packstack...."
 echo
 rdo_install 2>/dev/null
 
+# https://bugzilla.redhat.com/show_bug.cgi?id=1012001
+if [[ -f /etc/qpidd.conf && -f /etc/qpid/qpidd.conf ]]; then
+    cp -f /etc/qpidd.conf /etc/qpid/qpidd.conf
+fi
+
 echo
 echo "Done. Now, you need to reboot the server."
 
