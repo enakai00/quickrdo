@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 
 function pre_install {
     setenforce 0
