@@ -12,19 +12,6 @@ function pre_install {
     systemctl disable firewalld.service
     systemctl start iptables.service
     systemctl enable iptables.service
-
-    cat <<'EOF' > /etc/sysconfig/modules/openstack-neutron.modules
-#!/bin/sh
-modprobe -b bridge >/dev/null 2>&1
-exit 0
-EOF
-    chmod u+x /etc/sysconfig/modules/openstack-neutron.modules 
-
-    cat <<'EOF' > /etc/sysctl.d/bridge-nf-call
-net.bridge.bridge-nf-call-ip6tables = 0
-net.bridge.bridge-nf-call-iptables = 0
-net.bridge.bridge-nf-call-arptables = 0
-EOF
 }
 
 function post_install {
