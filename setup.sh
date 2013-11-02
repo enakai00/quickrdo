@@ -38,10 +38,6 @@ function rdo_install {
         virsh net-autostart default --disable
     fi
 
-    if ! grep -q -E '^systemctl restart qpidd$' /etc/rc.d/rc.local; then
-        echo "systemctl restart qpidd" >> /etc/rc.d/rc.local
-    fi
-
     # https://bugzilla.redhat.com/show_bug.cgi?id=978354
     yum install -y patch
     curl https://bugzilla.redhat.com/attachment.cgi?id=765551 > /tmp/securitygroups_db.py.patch
