@@ -27,7 +27,7 @@ EOF
 
 function rdo_install {
     yum install -y http://rdo.fedorapeople.org/openstack/openstack-grizzly/rdo-release-grizzly.rpm
-    yum install -y openstack-packstack
+    yum install -y openstack-packstack patch
 
     # https://bugzilla.redhat.com/show_bug.cgi?id=977786
     qpidd_conf=/usr/lib/python2.*/site-packages/packstack/puppet/modules/qpid/templates/qpidd.conf.erb
@@ -36,7 +36,14 @@ function rdo_install {
         sed -i.bak 's/cluster-mechanism/ha-mechanism/' $qpidd_conf
     fi
 
-    packstack --allinone --nagios-install=n --os-swift-install=n
+    patch_path=$(pwd)/lib
+    pushd /usr/lib/python2.7/site-packages/
+    patch -p0 -Nsb packstack/plugins/puppet_950.py < $patch_path/puppet_950.py.patch 
+    patch -p0 -Nsb packstack/plugins/prescript_000.py < $patch_path/prescript_000.py.patch
+    popd
+
+    ./lib/genanswer.sh controller
+    packstack --answer-file=controller.txt
     rc=$?
 
     if [[ $rc -ne 0 ]]; then
@@ -45,6 +52,8 @@ function rdo_install {
     fi
 
     openstack-config --set /etc/quantum/quantum.conf DEFAULT ovs_use_veth True
+    openstack-config --set /etc/quantum/plugin.ini OVS network_vlan_ranges physnet1,physnet2:100:199
+    openstack-config --set /etc/quantum/plugin.ini OVS bridge_mappings physnet1:br-ex,physnet2:br-priv
 
     if virsh net-info default >/dev/null ; then
         virsh net-destroy default
@@ -56,10 +65,13 @@ function rdo_install {
     fi
 
     # https://bugzilla.redhat.com/show_bug.cgi?id=978354
-    yum install -y patch
     curl https://bugzilla.redhat.com/attachment.cgi?id=765551 > /tmp/securitygroups_db.py.patch
-    cd /usr/lib/python2.*/site-packages/
+    pushd /usr/lib/python2.*/site-packages/
     patch -p0 -Nsb < /tmp/securitygroups_db.py.patch
+    popd
+
+    systemctl stop openstack-nova-compute.service 
+    systemctl disable openstack-nova-compute.service 
 }
 
 # main

@@ -3,8 +3,8 @@
 ####
 public="192.168.199.0/24"
 gateway="192.168.199.1"
-nameserver="8.8.8.8"
-pool=("192.168.199.100" "192.168.199.199")
+nameserver="192.168.199.1"
+pool=("192.168.199.100" "192.168.122.199")
 private=("192.168.101.0/24")
 ####
 
@@ -51,7 +51,8 @@ function config_tenant {
     tenant=$(keystone tenant-list | awk '/ services / {print $2}')
     quantum net-create \
         --tenant-id $tenant ext-network --shared \
-        --provider:network_type local --router:external=True
+        --provider:network_type flat --provider:physical_network physnet1 \
+        --router:external=True
     quantum subnet-create \
         --tenant-id $tenant --gateway ${gateway} --disable-dhcp \
         --allocation-pool start=${pool[0]},end=${pool[1]} \
@@ -69,9 +70,13 @@ function config_tenant {
     #
     for (( i = 0; i < ${#private[@]}; ++i )); do
         name=$(printf "private%02d" $(( i + 1 )))
+        vlanid=$(printf "%03d" $(( i + 101 )))
         subnet=${private[i]}
         quantum net-create \
-            --tenant-id $tenant ${name} --provider:network_type local
+            --tenant-id $tenant ${name} \
+            --provider:network_type vlan \
+            --provider:physical_network physnet2 \
+            --provider:segmentation_id ${vlanid}
         quantum subnet-create \
             --tenant-id $tenant --name ${name}-subnet \
             --dns-nameserver ${nameserver} ${name} ${subnet}
@@ -101,15 +106,25 @@ function config_tenant {
 
 extnic=""
 while [[ -z $extnic ]]; do
-    echo -n "VM access NIC: "
+    echo -n "External NIC: "
     read extnic
+done
+
+privnic=""
+while [[ -z $privnic ]]; do
+    echo -n "Private NIC: "
+    read privnic
 done
 
 if ! ovs-vsctl list-ports br-ex | grep -q ${extnic}; then
     ovs-vsctl add-port br-ex ${extnic}
 fi
 
-config_tenant 2>/dev/null
+if ! ovs-vsctl list-ports br-priv | grep -q ${privnic}; then
+    ovs-vsctl add-port br-priv ${privnic}
+fi
+
+config_tenant # 2>/dev/null
 
 echo
 echo "Configuration finished."
