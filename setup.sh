@@ -14,7 +14,7 @@ function prep {
 
 function rdo_install {
     yum install -y http://rdo.fedorapeople.org/openstack/openstack-grizzly/rdo-release-grizzly.rpm
-    yum install -y openstack-packstack
+    yum install -y openstack-packstack-2013.1.1-0.20.dev642.fc19.noarch
 
     # https://bugzilla.redhat.com/show_bug.cgi?id=977786
     qpidd_conf=/usr/lib/python2.*/site-packages/packstack/puppet/modules/qpid/templates/qpidd.conf.erb
