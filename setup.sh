@@ -5,6 +5,7 @@ function prep {
     sed -i.bak 's/^SELINUX=.*/SELINUX=permissive/' /etc/selinux/config
 
     yum update -y
+    yum install -y patch
     yum install -y iptables-services
     systemctl stop firewalld.service
     systemctl disable firewalld.service
