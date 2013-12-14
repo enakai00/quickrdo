@@ -7,6 +7,7 @@ function prep {
     sed -i.bak 's/^SELINUX=.*/SELINUX=permissive/' /etc/selinux/config
 
     yum update -y
+    yum install -y patch
     yum install -y iptables-services
     systemctl stop firewalld.service
     systemctl disable firewalld.service
@@ -26,13 +27,6 @@ function rdo_install {
     fi
 
     packstack --allinone --nagios-install=n --os-swift-install=n
-    rc=$?
-
-    if [[ $rc -ne 0 ]]; then
-        echo "Packstack installation failed."
-        exit $rc
-    fi
-
     openstack-config --set /etc/quantum/quantum.conf DEFAULT ovs_use_veth True
 
     if virsh net-info default | grep -q -E "Active: *yes"; then
@@ -41,7 +35,6 @@ function rdo_install {
     fi
 
     # https://bugzilla.redhat.com/show_bug.cgi?id=978354
-    yum install -y patch
     curl https://bugzilla.redhat.com/attachment.cgi?id=765551 > /tmp/securitygroups_db.py.patch
     cd /usr/lib/python2.*/site-packages/
     patch -p0 -Nsb < /tmp/securitygroups_db.py.patch
