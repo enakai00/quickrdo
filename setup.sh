@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/sh -e
+
+export LANG=en_US.utf8
 
 function prep {
     setenforce 0
@@ -33,7 +35,7 @@ function rdo_install {
 
     openstack-config --set /etc/quantum/quantum.conf DEFAULT ovs_use_veth True
 
-    if virsh net-info default >/dev/null ; then
+    if virsh net-info default | grep -q -E "Active: *yes"; then
         virsh net-destroy default
         virsh net-autostart default --disable
     fi
