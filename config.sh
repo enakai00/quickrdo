@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -e
 
 ####
 public="192.168.199.0/24"
@@ -7,6 +7,8 @@ nameserver="192.168.199.1"
 pool=("192.168.199.100" "192.168.199.199")
 private=("192.168.101.0/24")
 ####
+
+export LANG=en_US.utf8
 
 function config_tenant {
     . /root/keystonerc_admin

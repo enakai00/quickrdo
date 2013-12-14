@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/sh -e
+
+export LANG=en_US.utf8
 
 function prep {
     setenforce 0
@@ -32,31 +34,19 @@ function rdo_install {
 
     ./lib/genanswer.sh controller
     packstack --answer-file=controller.txt
-    rc=$?
-
-    if [[ $rc -ne 0 ]]; then
-        echo "Packstack installation failed."
-        exit $rc
-    fi
-
     openstack-config --set /etc/quantum/quantum.conf DEFAULT ovs_use_veth True
     openstack-config --set /etc/quantum/plugin.ini OVS network_vlan_ranges physnet1,physnet2:100:199
     openstack-config --set /etc/quantum/plugin.ini OVS bridge_mappings physnet1:br-ex,physnet2:br-priv
 
-    if virsh net-info default >/dev/null ; then
+    if virsh net-info default | grep -q -E "Active: *yes"; then
         virsh net-destroy default
         virsh net-autostart default --disable
     fi
 
-    if ! grep -q -E '^systemctl restart qpidd$' /etc/rc.d/rc.local; then
-        echo "systemctl restart qpidd" >> /etc/rc.d/rc.local
-    fi
-
     # https://bugzilla.redhat.com/show_bug.cgi?id=978354
     curl https://bugzilla.redhat.com/attachment.cgi?id=765551 > /tmp/securitygroups_db.py.patch
-    pushd /usr/lib/python2.*/site-packages/
+    cd /usr/lib/python2.*/site-packages/
     patch -p0 -Nsb < /tmp/securitygroups_db.py.patch
-    popd
 
     systemctl stop openstack-nova-compute.service 
     systemctl disable openstack-nova-compute.service 

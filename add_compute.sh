@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/sh -e
+
+export LANG=en_US.utf8
 
 if [[ -z $1 ]]; then
     echo "Usage: $0 <Compute node IP>"
@@ -27,21 +29,15 @@ echo
 
 ./lib/genanswer.sh compute $compute_ip
 packstack --answer-file=compute.txt
-rc=$?
-
-if [[ $rc -ne 0 ]]; then
-    echo "Packstack installation failed."
-    exit $rc
-fi
 
 echo
 echo "Done. Now, rebooting the server..."
 echo
 
-ssh root@${compute_ip} reboot
+ssh root@${compute_ip} reboot || :
 res=""
 while [[ $res != "Linux" ]]; do
-    res=$(ssh -o "StrictHostKeyChecking no" root@${compute_ip} uname)
+    res=$(ssh -o "StrictHostKeyChecking no" root@${compute_ip} uname) || :
     sleep 5
 done
 ssh root@${compute_ip} "/root/prep_compute.sh post $privnic"
