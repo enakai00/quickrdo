@@ -5,7 +5,7 @@ public="192.168.199.0/24"
 gateway="192.168.199.1"
 nameserver="8.8.8.8"
 pool=("192.168.199.100" "192.168.199.199")
-private=("192.168.101.0/24")
+private=("192.168.101.0/24" "192.168.102.0/24")
 ####
 
 export LANG=en_US.utf8
@@ -13,14 +13,6 @@ export LANG=en_US.utf8
 function config_tenant {
     . /root/keystonerc_admin
 
-    #
-    # Upload glance image
-    #
-    if ! glance image-show "Fedora19" >/dev/null 2>&1; then
-        glance image-create --name "Fedora19" \
-            --disk-format qcow2 --container-format bare --is-public true \
-            --copy-from http://cloud.fedoraproject.org/fedora-19.x86_64.qcow2
-    fi
     #
     # create project and users
     #
@@ -78,24 +70,6 @@ function config_tenant {
             --tenant-id $tenant --name ${name}-subnet \
             --dns-nameserver ${nameserver} ${name} ${subnet}
         quantum router-interface-add demo_router ${name}-subnet
-    done
-
-    #
-    # configure security components
-    #
-    . /root/keystonerc_admin
-    export OS_USERNAME=demo_user
-    export OS_PASSWORD=passw0rd
-    export OS_TENANT_NAME=demo
-    nova secgroup-add-rule default tcp 22 22 0.0.0.0/0
-    nova secgroup-add-rule default icmp 8 0 0.0.0.0/0
-    if nova keypair-list | grep -q '^| mykey |'; then
-        nova keypair-delete mykey
-    fi
-    nova keypair-add mykey > ~/mykey.pem
-    chmod 600 ~/mykey.pem
-    for i in $(seq 1 5); do
-        quantum floatingip-create ext-network
     done
 }
 
