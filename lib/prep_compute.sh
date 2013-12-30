@@ -15,7 +15,7 @@ function pre_install {
 }
 
 function pre_reboot {
-    if cat /proc/cpuinfo | grep -E "^flags.+hypervisor" | grep -E "(vmx|svm)"; then
+    if cat /proc/cpuinfo | grep -E "^flags.+hypervisor" | grep -q -E "(vmx|svm)"; then
         openstack-config --set /etc/nova/nova.conf DEFAULT libvirt_type kvm
     fi
 }
