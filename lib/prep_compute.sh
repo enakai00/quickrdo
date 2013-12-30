@@ -14,6 +14,12 @@ function pre_install {
     systemctl enable iptables.service
 }
 
+function pre_reboot {
+    if cat /proc/cpuinfo | grep -E "^flags.+hypervisor" | grep -E "(vmx|svm)"; then
+        openstack-config --set /etc/nova/nova.conf DEFAULT libvirt_type kvm
+    fi
+}
+
 function post_install {
     privnic=$1
 
@@ -33,7 +39,10 @@ case $1 in
   pre)
     pre_install
     ;;
-  post)
+  post1)
+    pre_reboot
+    ;;
+  post2)
     post_install $2
     ;;
 esac

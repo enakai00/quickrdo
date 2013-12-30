@@ -34,13 +34,14 @@ echo
 echo "Done. Now, rebooting the server..."
 echo
 
+ssh root@${compute_ip} "/root/prep_compute.sh post1"
 ssh root@${compute_ip} reboot || :
 res=""
 while [[ $res != "Linux" ]]; do
     res=$(ssh -o "StrictHostKeyChecking no" root@${compute_ip} uname) || :
     sleep 5
 done
-ssh root@${compute_ip} "/root/prep_compute.sh post $privnic"
+ssh root@${compute_ip} "/root/prep_compute.sh post2 $privnic"
 
 echo
 echo "Done."
