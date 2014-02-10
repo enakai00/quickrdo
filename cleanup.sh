@@ -16,7 +16,8 @@ function cleanup_all {
         "*openstack*" "*quantum*" "*nova*" "*keystone*" \
         "*glance*" "*cinder*" openvswitch \
         mysql mysql-server "*memcache*" perl-DBI perl-DBD-MySQL \
-        scsi-target-utils iscsi-initiator-utils 
+        scsi-target-utils iscsi-initiator-utils \
+        "rdo-release-*"
 
     for x in nova glance cinder keystone horizon quantum;do
         rm -rf /var/lib/$x /var/log/$x /etc/$x
