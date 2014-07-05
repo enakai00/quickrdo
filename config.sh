@@ -16,10 +16,10 @@ function config_tenant {
     #
     # Upload glance image
     #
-    if ! glance image-show "Fedora19" >/dev/null 2>&1; then
-        glance image-create --name "Fedora19" \
+    if ! glance image-show "Fedora20" >/dev/null 2>&1; then
+        glance image-create --name "Fedora20" \
             --disk-format qcow2 --container-format bare --is-public true \
-            --copy-from http://cloud.fedoraproject.org/fedora-19.x86_64.qcow2
+            --copy-from http://cloud.fedoraproject.org/fedora-20.x86_64.qcow2
     fi
     #
     # create project and users
@@ -32,29 +32,29 @@ function config_tenant {
     keystone user-create --name demo_admin --pass passw0rd
     keystone user-create --name demo_user --pass passw0rd
     keystone user-role-add --user demo_admin --role admin --tenant demo
-    keystone user-role-add --user demo_user --role Member --tenant demo
+    keystone user-role-add --user demo_user --role _member_ --tenant demo
 
     #
-    # initialize quantum db
+    # initialize neutron db
     #
-    quantum_services=$(systemctl list-unit-files --type=service \
-        | grep -E 'quantum\S+\s+enabled' | cut -d" " -f1)
+    neutron_services=$(systemctl list-unit-files --type=service \
+        | grep -E 'neutron\S+\s+enabled' | cut -d" " -f1)
 
-    for s in ${quantum_services}; do systemctl stop $s; done
-    mysqladmin -f drop ovs_quantum
-    mysqladmin create ovs_quantum
-    quantum-netns-cleanup
-    for s in $quantum_services; do systemctl start $s; done
+    for s in ${neutron_services}; do systemctl stop $s; done
+    mysqladmin -f drop ovs_neutron
+    mysqladmin create ovs_neutron
+    neutron-netns-cleanup
+    for s in $neutron_services; do systemctl start $s; done
     sleep 5
 
     #
     # create external network
     #
     tenant=$(keystone tenant-list | awk '/ services / {print $2}')
-    quantum net-create \
+    neutron net-create \
         --tenant-id $tenant ext-network --shared \
         --provider:network_type local --router:external=True
-    quantum subnet-create \
+    neutron subnet-create \
         --tenant-id $tenant --gateway ${gateway} --disable-dhcp \
         --allocation-pool start=${pool[0]},end=${pool[1]} \
         ext-network ${public}
@@ -63,8 +63,8 @@ function config_tenant {
     # create router
     #
     tenant=$(keystone tenant-list|awk '/ demo / {print $2}')
-    quantum router-create --tenant-id $tenant demo_router
-    quantum router-gateway-set demo_router ext-network
+    neutron router-create --tenant-id $tenant demo_router
+    neutron router-gateway-set demo_router ext-network
 
     #
     # create private networks
@@ -72,12 +72,12 @@ function config_tenant {
     for (( i = 0; i < ${#private[@]}; ++i )); do
         name=$(printf "private%02d" $(( i + 1 )))
         subnet=${private[i]}
-        quantum net-create \
+        neutron net-create \
             --tenant-id $tenant ${name} --provider:network_type local
-        quantum subnet-create \
+        neutron subnet-create \
             --tenant-id $tenant --name ${name}-subnet \
             --dns-nameserver ${nameserver} ${name} ${subnet}
-        quantum router-interface-add demo_router ${name}-subnet
+        neutron router-interface-add demo_router ${name}-subnet
     done
 
     #
@@ -95,7 +95,7 @@ function config_tenant {
     nova keypair-add mykey > ~/mykey.pem
     chmod 600 ~/mykey.pem
     for i in $(seq 1 5); do
-        quantum floatingip-create ext-network
+        neutron floatingip-create ext-network
     done
 }
 

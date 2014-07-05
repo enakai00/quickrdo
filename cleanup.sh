@@ -1,7 +1,7 @@
 #!/bin/sh
 
 function cleanup_all {
-    services=$(systemctl list-unit-files | grep -E "(openstack|quantum).*\s+enabled" | cut -d" " -f1)
+    services=$(systemctl list-unit-files | grep -E "(openstack|neutron).*\s+enabled" | cut -d" " -f1)
     for s in $services; do
         systemctl stop $s
         systemctl disable $s;
@@ -13,17 +13,17 @@ function cleanup_all {
     done
 
     yum remove -y puppet "*ntp*" httpd "qpid-cpp-server*" \
-        "*openstack*" "*quantum*" "*nova*" "*keystone*" \
-        "*glance*" "*cinder*" openvswitch \
-        mysql mysql-server "*memcache*" perl-DBI perl-DBD-MySQL \
+        "*openstack*" "*neutron*" "*nova*" "*keystone*" \
+        "*glance*" "*cinder*" "*heat*" "*ceilometer*" openvswitch \
+        "mariadb*" "*memcache*" perl-DBI perl-DBD-MySQL \
         scsi-target-utils iscsi-initiator-utils \
         "rdo-release-*"
 
-    for x in nova glance cinder keystone horizon quantum;do
+    for x in nova glance cinder keystone horizon neutron heat ceilometer;do
         rm -rf /var/lib/$x /var/log/$x /etc/$x
     done
 
-    rm -rf /etc/yum.repos.d/packstack_* /root/.my.cnf /var/lib/mysql \
+    rm -rf /root/.my.cnf /var/lib/mysql \
         /etc/openvswitch /var/log/openvswitch 
 
     killall -9 dnsmasq tgtd httpd 
