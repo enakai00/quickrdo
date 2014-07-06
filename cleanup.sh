@@ -15,7 +15,7 @@ function cleanup_all {
     yum remove -y puppet "*ntp*" httpd "qpid-cpp-server*" \
         "*openstack*" "*neutron*" "*nova*" "*keystone*" \
         "*glance*" "*cinder*" "*heat*" "*ceilometer*" openvswitch \
-        "mariadb*" "*memcache*" perl-DBI perl-DBD-MySQL \
+        "*mariadb*" "*mongo*" "*memcache*" perl-DBI perl-DBD-MySQL \
         scsi-target-utils iscsi-initiator-utils \
         "rdo-release-*"
 
