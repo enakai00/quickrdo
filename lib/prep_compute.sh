@@ -5,7 +5,8 @@ function pre_install {
     sed -i.bak 's/^SELINUX=.*/SELINUX=permissive/' /etc/selinux/config
 
     yum update -y
-    yum install -y http://rdo.fedorapeople.org/openstack/openstack-grizzly/rdo-release-grizzly.rpm
+    yum install -y http://rdo.fedorapeople.org/openstack/EOL/openstack-grizzly/rdo-release-grizzly-3.noarch.rpm
+    sed -i 's/openstack\/openstack-grizzly/openstack\/EOL\/openstack-grizzly/' /etc/yum.repos.d/rdo-release.repo
     yum install -y patch iptables-services
 
     systemctl stop firewalld.service
