@@ -16,7 +16,9 @@ function prep {
 }
 
 function rdo_install {
-    yum install -y http://rdo.fedorapeople.org/openstack/openstack-grizzly/rdo-release-grizzly.rpm
+
+    yum install -y http://rdo.fedorapeople.org/openstack/EOL/openstack-grizzly/rdo-release-grizzly-3.noarch.rpm
+    sed -i 's/openstack\/openstack-grizzly/openstack\/EOL\/openstack-grizzly/' /etc/yum.repos.d/rdo-release.repo
     yum install -y openstack-packstack-2013.1.1-0.20.dev642.fc19.noarch
 
     # https://bugzilla.redhat.com/show_bug.cgi?id=977786
