@@ -1,0 +1,11 @@
+--- /usr/lib/python2.7/site-packages/cinder/backup/api.py.orig  2014-09-10 09:28:10.926450326 +0900
++++ /usr/lib/python2.7/site-packages/cinder/backup/api.py   2014-09-10 09:46:13.840450326 +0900
+@@ -194,7 +194,7 @@
+         self.db.volume_update(context, volume_id, {'status':
+                                                    'restoring-backup'})
+         self.backup_rpcapi.restore_backup(context,
+-                                          backup['host'],
++                                          volume['host'],
+                                           backup['id'],
+                                           volume_id)
+

@@ -5,40 +5,59 @@ export LANG=en_US.utf8
 function prep {
     setenforce 0
     sed -i.bak 's/^SELINUX=.*/SELINUX=permissive/' /etc/selinux/config
-
-    yum update -y
-    yum install -y patch
-    yum install -y iptables-services
+    yum install -y iptables-services patch
     systemctl stop firewalld.service
-    systemctl disable firewalld.service
+    systemctl mask firewalld.service
     systemctl start iptables.service
     systemctl enable iptables.service
 }
 
 function rdo_install {
-    yum install -y http://rdo.fedorapeople.org/openstack/EOL/openstack-grizzly/rdo-release-grizzly-3.noarch.rpm
-    sed -i 's/openstack\/openstack-grizzly/openstack\/EOL\/openstack-grizzly/' /etc/yum.repos.d/rdo-release.repo
-    yum install -y openstack-packstack-2013.1.1-0.20.dev642.fc19.noarch
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1014311
+    yum -y install mariadb-server
+    rm -f /usr/lib/systemd/system/mariadb.service
+    cp /usr/lib/systemd/system/mysqld.service /usr/lib/systemd/system/mariadb.service
 
-    # https://bugzilla.redhat.com/show_bug.cgi?id=977786
-    qpidd_conf=/usr/lib/python2.*/site-packages/packstack/puppet/modules/qpid/templates/qpidd.conf.erb
-    if grep -q cluster-mechanism $qpidd_conf; then
-        yum install -y qpid-cpp-server-ha
-        sed -i.bak 's/cluster-mechanism/ha-mechanism/' $qpidd_conf
-    fi
+    yum -y install http://repos.fedorapeople.org/repos/openstack/openstack-havana/rdo-release-havana-8.noarch.rpm
+    yum -y install openstack-packstack-2013.2.1-0.36.dev1013.fc20.noarch
 
-    packstack --allinone --nagios-install=n --os-swift-install=n
-    openstack-config --set /etc/quantum/quantum.conf DEFAULT ovs_use_veth True
+    ./lib/genanswer.sh controller
+    packstack --answer-file=controller.txt
+
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1103800
+    list=("/usr/lib/python2.7/site-packages/cinder/openstack/common/rpc/impl_qpid.py" \
+          "/usr/lib/python2.7/site-packages/keystone/openstack/common/rpc/impl_qpid.py" \
+          "/usr/lib/python2.7/site-packages/neutron/openstack/common/rpc/impl_qpid.py" \
+          "/usr/lib/python2.7/site-packages/nova/openstack/common/rpc/impl_qpid.py")
+    for module in ${list[@]}; do
+        sed -i 's/\(^            node_name = \)msg_id$/\1"%s\/%s" % (msg_id, msg_id)/' $module
+    done
+
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1139907
+    patch -p0 -Nsb /usr/lib/python2.7/site-packages/cinder/backup/api.py < lib/cinder_backup_api.py.patch
 
     if virsh net-info default | grep -q -E "Active: *yes"; then
         virsh net-destroy default
         virsh net-autostart default --disable
     fi
 
-    # https://bugzilla.redhat.com/show_bug.cgi?id=978354
-    curl https://bugzilla.redhat.com/attachment.cgi?id=765551 > /tmp/securitygroups_db.py.patch
-    cd /usr/lib/python2.*/site-packages/
-    patch -p0 -Nsb < /tmp/securitygroups_db.py.patch
+    systemctl stop openstack-nova-compute.service 
+    systemctl disable openstack-nova-compute.service 
+    systemctl stop openstack-cinder-volume.service
+    systemctl disable openstack-cinder-volume.service
+    systemctl stop openstack-cinder-backup.service
+    systemctl disable openstack-cinder-backup.service
+
+    openstack-config --set /etc/nova/nova.conf DEFAULT cinder_cross_az_attach False
+    openstack-config --set /etc/cinder/cinder.conf DEFAULT default_availability_zone az1
+    openstack-config --set --existing /etc/swift/proxy-server.conf filter:keystone operator_roles 'admin, SwiftOperator, _member_'
+    openstack-config --set /etc/nova/nova.conf DEFAULT default_availability_zone az1
+
+    cat <<'EOF' >/etc/rc.d/rc.local
+#!/bin/sh
+(sleep 10 && systemctl restart qpidd.service) &
+EOF
+    chmod u+x /etc/rc.d/rc.local
 }
 
 # main
@@ -52,11 +71,6 @@ echo
 echo "Installing RDO with packstack...."
 echo
 rdo_install 2>/dev/null
-
-# https://bugzilla.redhat.com/show_bug.cgi?id=1012001
-if [[ -f /etc/qpidd.conf && -f /etc/qpid/qpidd.conf ]]; then
-    cp -f /etc/qpidd.conf /etc/qpid/qpidd.conf
-fi
 
 echo
 echo "Done. Now, you need to reboot the server."
