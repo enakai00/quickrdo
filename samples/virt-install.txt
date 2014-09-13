@@ -1,0 +1,37 @@
+virt-install --name rdo01 \
+    --vcpus 2 --ram 4096 \
+    --disk path=/var/lib/libvirt/images/rdo01.img,size=64,sparse=false \
+    --network network:external01 \
+    --network network:external01 \
+    --network network:internal01 \
+    --graphics vnc \
+    --cpu host \
+    --os-variant fedora19 \
+    --location http://192.168.200.1/Fedora19/ \
+    --initrd-inject=rdo01.ks \
+    --extra-args="ks=file:/rdo01.ks"
+
+virt-install --name rdo02 \
+    --vcpus 4 --ram 8192 \
+    --disk path=/var/lib/libvirt/images/rdo02.img,size=64,sparse=false \
+    --network network:external01 \
+    --network network:internal01 \
+    --graphics vnc \
+    --cpu host \
+    --os-variant fedora19 \
+    --location http://192.168.200.1/Fedora19/ \
+    --initrd-inject=rdo02.ks \
+    --extra-args="ks=file:/rdo02.ks"
+
+virt-install --name rdo03 \
+    --vcpus 4 --ram 4096 \
+    --disk path=/var/lib/libvirt/images/rdo03.img,size=64,sparse=false \
+    --network network:external01 \
+    --network network:internal01 \
+    --graphics vnc \
+    --cpu host \
+    --os-variant fedora19 \
+    --location http://192.168.200.1/Fedora19/ \
+    --initrd-inject=rdo03.ks \
+    --extra-args="ks=file:/rdo03.ks"
+
