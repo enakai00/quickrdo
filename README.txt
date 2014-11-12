@@ -1,7 +1,8 @@
 *quickrdo
 This is tested with the following packages:
-- rdo-release-havana-8.noarch
-- openstack-packstack-2013.2.1-0.36.dev1013.fc20.noarch
+
+- rdo-release-havana-9.noarch.rpm
+- openstack-packstack-2013.2.1-0.37.dev1048.fc20.noarch
 
 Copyright (C) 2014 Etsuji Nakai
 
