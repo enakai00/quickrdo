@@ -31,6 +31,17 @@ function rdo_install {
     sed -i 's/CONFIG_HEAT_CFN_INSTALL=.*/CONFIG_HEAT_CFN_INSTALL=y/' answers.txt
     packstack --answer-file=answers.txt
 
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1103800
+    list=( "/usr/lib/python2.7/site-packages/ceilometer/openstack/common/rpc/impl_qpid.py" \
+           "/usr/lib/python2.7/site-packages/cinder/openstack/common/rpc/impl_qpid.py" \
+           "/usr/lib/python2.7/site-packages/heat/openstack/common/rpc/impl_qpid.py" \
+           "/usr/lib/python2.7/site-packages/keystone/openstack/common/rpc/impl_qpid.py" \
+           "/usr/lib/python2.7/site-packages/neutron/openstack/common/rpc/impl_qpid.py" \
+           "/usr/lib/python2.7/site-packages/nova/openstack/common/rpc/impl_qpid.py" )
+    for module in ${list[@]}; do
+        sed -i 's/\(^            node_name = \)msg_id$/\1"%s\/%s" % (msg_id, msg_id)/' $module
+    done
+
     . ~/keystonerc_admin
     heat-manage db_sync
     # https://bugzilla.redhat.com/show_bug.cgi?id=1106394
