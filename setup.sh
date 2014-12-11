@@ -51,6 +51,18 @@ function rdo_install {
 
     systemctl stop openstack-nova-compute.service 
     systemctl disable openstack-nova-compute.service 
+
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1012001
+    if [[ -f /etc/qpidd.conf && -f /etc/qpid/qpidd.conf ]]; then
+        cp -f /etc/qpidd.conf /etc/qpid/qpidd.conf
+    fi
+
+    cat <<'EOF' >/etc/cron.daily/token_creanup.sh
+#!/bin/bash
+
+/usr/bin/mysql keystone -e "delete from token where now() > expires;" 2>&1 | logger -t "token_cleanup"
+EOF
+    chmod u+x /etc/cron.daily/token_creanup.sh
 }
 
 # main
@@ -64,11 +76,6 @@ echo
 echo "Installing RDO with packstack...."
 echo
 rdo_install 2>/dev/null
-
-# https://bugzilla.redhat.com/show_bug.cgi?id=1012001
-if [[ -f /etc/qpidd.conf && -f /etc/qpid/qpidd.conf ]]; then
-    cp -f /etc/qpidd.conf /etc/qpid/qpidd.conf
-fi
 
 echo
 echo "Done. Now, you need to reboot the server."
