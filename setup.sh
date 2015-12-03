@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/sh -e
+
+export LANG=en_US.utf8
 
 function prep {
     setenforce 0
@@ -7,59 +9,28 @@ function prep {
     yum update -y
     yum install -y iptables-services
     systemctl stop firewalld.service
-    systemctl disable firewalld.service
+    systemctl mask firewalld.service
     systemctl start iptables.service
     systemctl enable iptables.service
-
-    cat <<'EOF' > /etc/sysconfig/modules/openstack-neutron.modules
-#!/bin/sh
-modprobe -b bridge >/dev/null 2>&1
-exit 0
-EOF
-    chmod u+x /etc/sysconfig/modules/openstack-neutron.modules 
-
-    cat <<'EOF' > /etc/sysctl.d/bridge-nf-call
-net.bridge.bridge-nf-call-ip6tables = 1
-net.bridge.bridge-nf-call-iptables = 1
-net.bridge.bridge-nf-call-arptables = 1
-EOF
 }
 
 function rdo_install {
-    yum install -y http://rdo.fedorapeople.org/openstack/openstack-grizzly/rdo-release-grizzly.rpm
-    yum install -y openstack-packstack
+    yum -y install https://repos.fedorapeople.org/repos/openstack/openstack-liberty/rdo-release-liberty-2.noarch.rpm
+    yum -y install openstack-packstack-7.0.0-0.7.dev1661.gaf13b7e.el7.noarch
+    packstack --gen-answer-file=answers.txt
+    sed -i 's/CONFIG_PROVISION_DEMO=.*/CONFIG_PROVISION_DEMO=n/' answers.txt
+    sed -i 's/CONFIG_SWIFT_INSTALL=.*/CONFIG_SWIFT_INSTALL=n/' answers.txt
+    sed -i 's/CONFIG_NAGIOS_INSTALL=.*/CONFIG_NAGIOS_INSTALL=n/' answers.txt
+    sed -i 's/CONFIG_HEAT_INSTALL=.*/CONFIG_HEAT_INSTALL=y/' answers.txt
+    sed -i 's/CONFIG_HEAT_CLOUDWATCH_INSTALL=.*/CONFIG_HEAT_CLOUDWATCH_INSTALL=y/' answers.txt
+    sed -i 's/CONFIG_HEAT_CFN_INSTALL=.*/CONFIG_HEAT_CFN_INSTALL=y/' answers.txt
+    sed -i 's/CONFIG_NEUTRON_ML2_TYPE_DRIVERS=.*/CONFIG_NEUTRON_ML2_TYPE_DRIVERS=local/' answers.txt
+    sed -i 's/CONFIG_NEUTRON_ML2_TENANT_NETWORK_TYPES=.*/CONFIG_NEUTRON_ML2_TENANT_NETWORK_TYPES=local/' answers.txt
 
-    # https://bugzilla.redhat.com/show_bug.cgi?id=977786
-    qpidd_conf=/usr/lib/python2.*/site-packages/packstack/puppet/modules/qpid/templates/qpidd.conf.erb
-    if grep -q cluster-mechanism $qpidd_conf; then
-        yum install -y qpid-cpp-server-ha
-        sed -i.bak 's/cluster-mechanism/ha-mechanism/' $qpidd_conf
-    fi
+    packstack --answer-file=answers.txt
 
-    packstack --allinone --nagios-install=n --os-swift-install=n
-    rc=$?
-
-    if [[ $rc -ne 0 ]]; then
-        echo "Packstack installation failed."
-        exit $rc
-    fi
-
-    openstack-config --set /etc/quantum/quantum.conf DEFAULT ovs_use_veth True
-
-    if virsh net-info default >/dev/null ; then
-        virsh net-destroy default
-        virsh net-autostart default --disable
-    fi
-
-    if ! grep -q -E '^systemctl restart qpidd$' /etc/rc.d/rc.local; then
-        echo "systemctl restart qpidd" >> /etc/rc.d/rc.local
-    fi
-
-    # https://bugzilla.redhat.com/show_bug.cgi?id=978354
-    yum install -y patch
-    curl https://bugzilla.redhat.com/attachment.cgi?id=765551 > /tmp/securitygroups_db.py.patch
-    cd /usr/lib/python2.*/site-packages/
-    patch -p0 -Nsb < /tmp/securitygroups_db.py.patch
+    . ~/keystonerc_admin
+    heat-manage db_sync
 }
 
 # main
