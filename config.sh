@@ -108,25 +108,6 @@ function config_tenant {
 }
 
 # main
-extnic=""
-while [[ -z $extnic ]]; do
-    echo -n "External NIC: "
-    read extnic
-done
-
-privnic=""
-while [[ -z $privnic ]]; do
-    echo -n "Private NIC: "
-    read privnic
-done
-
-if ! ovs-vsctl list-ports br-ex | grep -q ${extnic}; then
-    ovs-vsctl add-port br-ex ${extnic}
-fi
-
-if ! ovs-vsctl list-ports br-priv | grep -q ${privnic}; then
-    ovs-vsctl add-port br-priv ${privnic}
-fi
 
 config_tenant 2>/dev/null
 
