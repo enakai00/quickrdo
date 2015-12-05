@@ -16,7 +16,7 @@ function cleanup_all {
         "*openstack*" "*neutron*" "*nova*" "*keystone*" \
         "*glance*" "*cinder*" "*heat*" "*ceilometer*" openvswitch \
         "*mariadb*" "*mongo*" "*memcache*" perl-DBI perl-DBD-MySQL \
-        scsi-target-utils iscsi-initiator-utils
+        scsi-target-utils iscsi-initiator-utils redis
 
     for x in nova glance cinder keystone horizon neutron heat ceilometer;do
         rm -rf /var/lib/$x /var/log/$x /etc/$x
