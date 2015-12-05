@@ -32,13 +32,6 @@ function pre_reboot {
     openstack-config --set /etc/nova/nova.conf DEFAULT vncserver_proxyclient_address $compute_ip
 }
 
-function post_install {
-    privnic=$1
-    if ! ovs-vsctl list-ports br-priv | grep -q ${privnic}; then
-        ovs-vsctl add-port br-priv ${privnic}
-    fi
-}
-
 ## main
 
 case $1 in
@@ -47,9 +40,6 @@ case $1 in
     ;;
   post1)
     pre_reboot $2
-    ;;
-  post2)
-    post_install $2
     ;;
 esac
 

@@ -32,14 +32,10 @@ function osp_install {
     yum -y install openstack-packstack
     ./lib/genanswer.sh controller $privnic
     packstack --answer-file=controller.txt
-    openstack-config --set /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini ovs bridge_mappings "extnet:br-ex,privnet:br-priv"
+    openstack-config --set /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini ovs bridge_mappings "extnet:br-ex"
 
     if ! ovs-vsctl list-ports br-ex | grep -q ${extnic}; then
         ovs-vsctl add-port br-ex ${extnic}
-    fi
-
-    if ! ovs-vsctl list-ports br-priv | grep -q ${privnic}; then
-        ovs-vsctl add-port br-priv ${privnic}
     fi
 
     systemctl stop openstack-nova-compute.service 
