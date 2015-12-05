@@ -30,6 +30,7 @@ function osp_install {
     yum -y install openstack-packstack
     ./lib/genanswer.sh controller
     packstack --answer-file=controller.txt
+    openstack-config --set /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini ovs bridge_mappings "extnet:br-ex,privnet:br-priv"
 
     systemctl stop openstack-nova-compute.service 
     systemctl disable openstack-nova-compute.service 
