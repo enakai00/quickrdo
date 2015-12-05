@@ -43,7 +43,7 @@ echo
 prep 2>/dev/null
 
 echo
-echo "Installing RDO with packstack...."
+echo "Installing RHEL-OSP with packstack...."
 echo
 osp_install 2>/dev/null
 

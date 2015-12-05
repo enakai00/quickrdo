@@ -29,7 +29,7 @@ scp ./lib/prep_compute.sh root@${compute_ip}:/root/
 ssh root@${compute_ip} "/root/prep_compute.sh pre"
 
 echo
-echo "Installing OPS with packstack...."
+echo "Installing RHEL-OSP with packstack...."
 echo
 
 ./lib/genanswer.sh compute $compute_ip
