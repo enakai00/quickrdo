@@ -3,8 +3,6 @@
 export LANG=en_US.utf8
 
 function prep {
-#    setenforce 0
-#    sed -i.bak 's/^SELINUX=.*/SELINUX=permissive/' /etc/selinux/config
     subscription-manager repos --disable=*
     subscription-manager repos \
         --enable=rhel-7-server-rpms \
@@ -35,15 +33,6 @@ function osp_install {
 
     systemctl stop openstack-nova-compute.service 
     systemctl disable openstack-nova-compute.service 
-
-#    openstack-config --set /etc/quantum/quantum.conf DEFAULT ovs_use_veth True
-#    openstack-config --set /etc/quantum/plugin.ini OVS network_vlan_ranges physnet1,physnet2:100:199
-#    openstack-config --set /etc/quantum/plugin.ini OVS bridge_mappings physnet1:br-ex,physnet2:br-priv
-
-#    if virsh net-info default | grep -q -E "Active: *yes"; then
-#        virsh net-destroy default
-#        virsh net-autostart default --disable
-#    fi
 }
 
 # main
