@@ -22,11 +22,14 @@ function compute {
         echo "You need controller.txt."
         exit 1
     fi
-    cp -f controller.txt compute.txt
-
-    controller_ip=$(awk -F"=" '/CONFIG_CONTROLLER_HOST=/{ print $2 }' compute.txt )
-    sed -i "s/EXCLUDE_SERVERS=.*/EXCLUDE_SERVERS=${controller_ip}/" compute.txt
-    sed -i "s/CONFIG_COMPUTE_HOSTS=.*/CONFIG_COMPUTE_HOSTS=${node}/" compute.txt
+    if [[ ! -f compute.txt ]]; then
+        cp -f controller.txt compute.txt
+        sed -i "s/CONFIG_COMPUTE_HOSTS=.*/CONFIG_COMPUTE_HOSTS=${node}/" compute.txt
+    else
+        compute_nodes=$(awk -F"=" '/CONFIG_COMPUTE_HOSTS=/{ print $2 }' compute.txt )
+        compute_nodes="${comput_nodes},${node}"
+        sed -i "s/CONFIG_COMPUTE_HOSTS=.*/CONFIG_COMPUTE_HOSTS=${compute_nodes}/" compute.txt
+    fi
 }
 
 function main {
