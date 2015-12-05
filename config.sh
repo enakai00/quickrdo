@@ -50,7 +50,7 @@ function config_tenant {
     mysqladmin -f drop neutron
     mysqladmin create neutron
     neutron-db-manage --config-file /etc/neutron/neutron.conf \
-      --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade liberty
+      --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade kilo
 
     neutron-netns-cleanup
     for s in $neutron_services; do systemctl start $s; done
