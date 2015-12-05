@@ -32,7 +32,7 @@ echo
 echo "Installing RHEL-OSP with packstack...."
 echo
 
-./lib/genanswer.sh compute $compute_ip
+./lib/genanswer.sh compute $compute_ip $privnic
 packstack --answer-file=compute.txt
 
 echo

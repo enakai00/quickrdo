@@ -27,16 +27,40 @@ function prep {
 }
 
 function osp_install {
+    extnic=$1
+    privnic=$2
     yum -y install openstack-packstack
-    ./lib/genanswer.sh controller
+    ./lib/genanswer.sh controller $privnic
     packstack --answer-file=controller.txt
     openstack-config --set /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini ovs bridge_mappings "extnet:br-ex,privnet:br-priv"
 
+    if ! ovs-vsctl list-ports br-ex | grep -q ${extnic}; then
+        ovs-vsctl add-port br-ex ${extnic}
+    fi
+
+    if ! ovs-vsctl list-ports br-priv | grep -q ${privnic}; then
+        ovs-vsctl add-port br-priv ${privnic}
+    fi
+
     systemctl stop openstack-nova-compute.service 
     systemctl disable openstack-nova-compute.service 
+fi
 }
 
 # main
+
+extnic=""
+while [[ -z $extnic ]]; do
+    echo -n "External NIC: "
+    read extnic
+done
+
+privnic=""
+while [[ -z $privnic ]]; do
+    echo -n "Private NIC: "
+    read privnic
+done
+
 
 echo
 echo "Doing preparations..."
@@ -46,7 +70,7 @@ prep 2>/dev/null
 echo
 echo "Installing RHEL-OSP with packstack...."
 echo
-osp_install 2>/dev/null
+osp_install $extnic $privnic 2>/dev/null
 
 echo
 echo "Done. Now, you need to reboot the server."

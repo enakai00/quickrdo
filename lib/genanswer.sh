@@ -1,6 +1,7 @@
 #!/bin/sh
 
 function controller {
+    privnic=$1
     packstack --gen-answer-file=controller.txt
     cp controller.txt controller.txt.orig
 
@@ -13,10 +14,12 @@ function controller {
     sed -i 's/CONFIG_CINDER_VOLUMES_CREATE=.*/CONFIG_CINDER_VOLUMES_CREATE=n/' controller.txt
     sed -i 's/CONFIG_NEUTRON_ML2_TYPE_DRIVERS=.*/CONFIG_NEUTRON_ML2_TYPE_DRIVERS=vxlan,flat/' controller.txt
     sed -i 's/CONFIG_NEUTRON_OVS_BRIDGE_MAPPINGS=.*/CONFIG_NEUTRON_OVS_BRIDGE_MAPPINGS=privnet:br-priv/' controller.txt
+    sed -i "s/CONFIG_NEUTRON_OVS_TUNNEL_IF=.*/CONFIG_NEUTRON_OVS_TUNNEL_IF=$privnic/" controller.txt
 }
 
 function compute {
     node=$1
+    privnic=$2
     if [[ ! -f controller.txt ]]; then
         echo "You need controller.txt."
         exit 1
@@ -26,17 +29,18 @@ function compute {
     controller_ip=$(awk -F"=" '/CONFIG_CONTROLLER_HOST=/{ print $2 }' compute.txt )
     sed -i "s/EXCLUDE_SERVERS=.*/EXCLUDE_SERVERS=${controller_ip}/" compute.txt
     sed -i "s/CONFIG_COMPUTE_HOSTS=.*/CONFIG_COMPUTE_HOSTS=${node}/" compute.txt
+    sed -i "s/CONFIG_NEUTRON_OVS_TUNNEL_IF=.*/CONFIG_NEUTRON_OVS_TUNNEL_IF=$privnic/" compute.txt
 }
 
 function main {
     case $1 in
 
       "controller")
-        controller
+        controller $2
         ;;
 
       "compute")
-        compute $2
+        compute $2 $3
         ;;
 
       *)
