@@ -27,7 +27,9 @@ function compute {
         sed -i "s/CONFIG_COMPUTE_HOSTS=.*/CONFIG_COMPUTE_HOSTS=${node}/" compute.txt
     else
         compute_nodes=$(awk -F"=" '/CONFIG_COMPUTE_HOSTS=/{ print $2 }' compute.txt )
-        compute_nodes="${comput_nodes},${node}"
+        if ! echo $compute_nodes | grep -q $node; then
+            compute_nodes="${compute_nodes},${node}"
+        fi
         sed -i "s/CONFIG_COMPUTE_HOSTS=.*/CONFIG_COMPUTE_HOSTS=${compute_nodes}/" compute.txt
     fi
 }
