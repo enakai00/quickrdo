@@ -44,7 +44,6 @@ function osp_install {
 
     systemctl stop openstack-nova-compute.service 
     systemctl disable openstack-nova-compute.service 
-fi
 }
 
 # main
