@@ -22,6 +22,12 @@ function config_tenant {
             --location http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2
     fi
 
+    if ! glance image-list | grep "cirros" >/dev/null 2>&1; then
+        glance --os-image-api-version 1 image-create --name "cirros" \
+            --disk-format qcow2 --container-format bare --is-public true \
+            --location http://download.cirros-cloud.net/0.3.4/cirros-0.3.4-x86_64-disk.img
+    fi
+
     #
     # create project and users
     #
