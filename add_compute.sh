@@ -19,12 +19,17 @@ echo
 echo "Doing preparations..."
 echo
 
+# Temporarily accept all incoming packets and modify iptables config file.
+iptables -I INPUT 1 -j ACCEPT
+controller_ip=$(cat compute.txt | awk -F'=' '/CONFIG_CONTROLLER_HOST=/{print $2}')
+sed -i "s/\(^-A INPUT -s \)$controller_ip\(\/.*\)/&\n\1$compute_ip\2/" /etc/sysconfig/iptables
+
 ssh-copy-id root@${compute_ip}
 scp ./lib/prep_compute.sh root@${compute_ip}:/root/
 ssh root@${compute_ip} "/root/prep_compute.sh pre"
 
 echo
-echo "Installing RDO with packstack...."
+echo "Installing OPS with packstack...."
 echo
 
 ./lib/genanswer.sh compute $compute_ip
@@ -34,7 +39,7 @@ echo
 echo "Done. Now, rebooting the server..."
 echo
 
-ssh root@${compute_ip} "/root/prep_compute.sh post1"
+ssh root@${compute_ip} "/root/prep_compute.sh post1 $compute_ip"
 ssh root@${compute_ip} reboot || :
 res=""
 while [[ $res != "Linux" ]]; do

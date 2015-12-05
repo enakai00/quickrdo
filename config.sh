@@ -1,11 +1,11 @@
 #!/bin/sh -e
 
 ####
-public="192.168.199.0/24"
-gateway="192.168.199.1"
-nameserver="192.168.199.1"
-pool=("192.168.199.100" "192.168.199.199")
-private=("192.168.101.0/24")
+public="192.168.200.0/24"
+gateway="192.168.200.1"
+nameserver="8.8.8.8"
+pool=("192.168.200.100" "192.168.200.199")
+private=("192.168.101.0/24" "192.168.102.0/24")
 ####
 
 export LANG=en_US.utf8
@@ -16,82 +16,78 @@ function config_tenant {
     #
     # Upload glance image
     #
-    if ! glance image-show "Fedora19" >/dev/null 2>&1; then
-        glance image-create --name "Fedora19" \
+    if ! glance image-list | grep "CentOS7" >/dev/null 2>&1; then
+        glance --os-image-api-version 1 image-create --name "CentOS7" \
             --disk-format qcow2 --container-format bare --is-public true \
-            --copy-from http://cloud.fedoraproject.org/fedora-19.x86_64.qcow2
+            --location http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2
     fi
+
     #
     # create project and users
     #
-    keystone user-get demo_admin && keystone user-delete demo_admin
-    keystone user-get demo_user && keystone user-delete demo_user
-    keystone tenant-get demo && keystone tenant-delete demo
+    openstack user show demo_admin && openstack user delete demo_admin
+    openstack user show demo_user && openstack user delete demo_user
+    openstack project show demo && openstack project delete demo
 
-    keystone tenant-create --name demo
-    keystone user-create --name demo_admin --pass passw0rd
-    keystone user-create --name demo_user --pass passw0rd
-    keystone user-role-add --user demo_admin --role admin --tenant demo
-    keystone user-role-add --user demo_user --role Member --tenant demo
+    openstack project create demo
+    openstack user create demo_admin --password passw0rd --project demo
+    openstack user create demo_user --password passw0rd --project demo
+    openstack role add --user demo_admin --project demo admin
 
     #
-    # initialize quantum db
+    # initialize neutron db
     #
-    quantum_services=$(systemctl list-unit-files --type=service \
-        | grep -E 'quantum\S+\s+enabled' | cut -d" " -f1)
+    neutron_services=$(systemctl list-unit-files --type=service \
+        | grep -E 'neutron\S+\s+enabled' | cut -d" " -f1)
 
-    for s in ${quantum_services}; do systemctl stop $s; done
-    mysqladmin -f drop ovs_quantum
-    mysqladmin create ovs_quantum
-    quantum-netns-cleanup
-    for s in $quantum_services; do systemctl start $s; done
-    sleep 5
+    for s in ${neutron_services}; do systemctl stop $s; done
+    mysqladmin -f drop neutron
+    mysqladmin create neutron
+    neutron-db-manage --config-file /etc/neutron/neutron.conf \
+      --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade liberty
+
+    neutron-netns-cleanup
+    for s in $neutron_services; do systemctl start $s; done
+    sleep 10
 
     #
     # create external network
     #
-    tenant=$(keystone tenant-list | awk '/ services / {print $2}')
-    quantum net-create \
+    tenant=$(openstack project list | awk '/ services / {print $2}')
+    neutron net-create \
         --tenant-id $tenant ext-network --shared \
-        --provider:network_type flat --provider:physical_network physnet1 \
-        --router:external=True
-    quantum subnet-create \
+        --provider:network_type flat --router:external=True
+    neutron subnet-create \
         --tenant-id $tenant --gateway ${gateway} --disable-dhcp \
         --allocation-pool start=${pool[0]},end=${pool[1]} \
         ext-network ${public}
 
+    . /root/keystonerc_admin
+    export OS_USERNAME=demo_user
+    export OS_PASSWORD=passw0rd
+    export OS_TENANT_NAME=demo
     #
     # create router
     #
-    tenant=$(keystone tenant-list|awk '/ demo / {print $2}')
-    quantum router-create --tenant-id $tenant demo_router
-    quantum router-gateway-set demo_router ext-network
+    neutron router-create demo_router
+    neutron router-gateway-set demo_router ext-network
+    sleep 10
 
     #
     # create private networks
     #
     for (( i = 0; i < ${#private[@]}; ++i )); do
         name=$(printf "private%02d" $(( i + 1 )))
-        vlanid=$(printf "%03d" $(( i + 101 )))
         subnet=${private[i]}
-        quantum net-create \
-            --tenant-id $tenant ${name} \
-            --provider:network_type vlan \
-            --provider:physical_network physnet2 \
-            --provider:segmentation_id ${vlanid}
-        quantum subnet-create \
-            --tenant-id $tenant --name ${name}-subnet \
+        neutron net-create ${name}
+        neutron subnet-create --name ${name}-subnet \
             --dns-nameserver ${nameserver} ${name} ${subnet}
-        quantum router-interface-add demo_router ${name}-subnet
+        neutron router-interface-add demo_router ${name}-subnet
     done
 
     #
     # configure security components
     #
-    . /root/keystonerc_admin
-    export OS_USERNAME=demo_user
-    export OS_PASSWORD=passw0rd
-    export OS_TENANT_NAME=demo
     nova secgroup-add-rule default tcp 22 22 0.0.0.0/0
     nova secgroup-add-rule default icmp 8 0 0.0.0.0/0
     if nova keypair-list | grep -q '^| mykey |'; then
@@ -100,12 +96,11 @@ function config_tenant {
     nova keypair-add mykey > ~/mykey.pem
     chmod 600 ~/mykey.pem
     for i in $(seq 1 5); do
-        quantum floatingip-create ext-network
+        neutron floatingip-create ext-network
     done
 }
 
 # main
-
 extnic=""
 while [[ -z $extnic ]]; do
     echo -n "External NIC: "
@@ -126,7 +121,7 @@ if ! ovs-vsctl list-ports br-priv | grep -q ${privnic}; then
     ovs-vsctl add-port br-priv ${privnic}
 fi
 
-config_tenant # 2>/dev/null
+config_tenant 2>/dev/null
 
 echo
 echo "Configuration finished."
