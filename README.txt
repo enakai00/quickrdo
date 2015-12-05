@@ -1,9 +1,8 @@
 *quickrdo
-This is tested with the following packages:
-- rdo-release-grizzly-3.noarch
-- openstack-packstack-2013.1.1-0.20.dev642.fc19.noarch
+This is tested with the following package:
+- openstack-packstack-2015.1-0.11.dev1589.g1d6372f.el7ost.noarch
 
-Copyright (C) 2013 Etsuji Nakai
+Copyright (C) 2015 Etsuji Nakai
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
