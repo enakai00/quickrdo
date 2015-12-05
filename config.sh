@@ -62,7 +62,8 @@ function config_tenant {
     tenant=$(openstack project list | awk '/ services / {print $2}')
     neutron net-create \
         --tenant-id $tenant ext-network --shared \
-        --provider:network_type flat --router:external=True
+        --provider:network_type flat --provider:physical_network extnet \
+        --router:external=True
     neutron subnet-create \
         --tenant-id $tenant --gateway ${gateway} --disable-dhcp \
         --allocation-pool start=${pool[0]},end=${pool[1]} \
