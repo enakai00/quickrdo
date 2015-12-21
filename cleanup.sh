@@ -1,7 +1,7 @@
 #!/bin/sh
 
 function cleanup_all {
-    services=$(systemctl list-unit-files | grep -E "(mariadb|openstack|neutron).*\s+enabled" | cut -d" " -f1)
+    services=$(systemctl list-unit-files | grep -E "(mariadb|openstack|neutron|rabbitmq-server).*\s+enabled" | cut -d" " -f1)
     for s in $services; do
         systemctl stop $s
         systemctl disable $s;
