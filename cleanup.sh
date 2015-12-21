@@ -12,6 +12,9 @@ function cleanup_all {
         virsh undefine $x
     done
 
+    systemctl stop iptables.service
+    iptables-save > /etc/sysconfig/iptables
+
     yum remove -y puppet "*ntp*" httpd "rabbitmq-server*" \
         "redis*" "*openstack*" "*neutron*" "*nova*" "*keystone*" \
         "*glance*" "*cinder*" "*heat*" "*ceilometer*" openvswitch \
