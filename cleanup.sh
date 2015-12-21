@@ -1,7 +1,7 @@
 #!/bin/sh
 
 function cleanup_all {
-    services=$(systemctl list-unit-files | grep -E "(mariadb|openstack|neutron|rabbitmq-server).*\s+enabled" | cut -d" " -f1)
+    services=$(systemctl list-unit-files | grep -E "(redis|mariadb|openstack|neutron|rabbitmq-server).*\s+enabled" | cut -d" " -f1)
     for s in $services; do
         systemctl stop $s
         systemctl disable $s;
@@ -13,7 +13,7 @@ function cleanup_all {
     done
 
     yum remove -y puppet "*ntp*" httpd "rabbitmq-server*" \
-        "*openstack*" "*neutron*" "*nova*" "*keystone*" \
+        "redis*" "*openstack*" "*neutron*" "*nova*" "*keystone*" \
         "*glance*" "*cinder*" "*heat*" "*ceilometer*" openvswitch \
         "*mariadb*" "*mongo*" "*memcache*" perl-DBI perl-DBD-MySQL \
         scsi-target-utils iscsi-initiator-utils \
