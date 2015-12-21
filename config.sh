@@ -115,5 +115,4 @@ fi
 config_tenant 2>/dev/null
 
 echo
-echo "Configuration finished."
-
+echo "Configuration finished. Now you need to reboot the server."
