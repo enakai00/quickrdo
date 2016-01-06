@@ -23,17 +23,14 @@ scp ./lib/prep_compute.sh root@${compute_ip}:/root/
 ssh root@${compute_ip} "/root/prep_compute.sh pre"
 
 echo
-echo "Installing RHEL-OSP with packstack...."
+echo "Installing RDO with packstack...."
 echo
 
 ./lib/genanswer.sh compute $compute_ip
+
 packstack --answer-file=compute.txt
 
-compute_nodes=$(awk -F"=" '/CONFIG_COMPUTE_HOSTS=/{ print $2 }' compute.txt )
-for node in ${compute_nodes//,/ }; do
-    scp ./lib/prep_compute.sh root@${node}:/root/
-    ssh root@${node} "/root/prep_compute.sh post1 $node"
-done
+ssh root@${compute_ip} "/root/prep_compute.sh post $compute_ip"
 
 echo
 echo "Done. Now, rebooting the server."

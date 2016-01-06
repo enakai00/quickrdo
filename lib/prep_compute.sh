@@ -1,21 +1,6 @@
 #!/bin/sh
 
 function pre_install {
-    subscription-manager repos --disable=*
-    subscription-manager repos \
-        --enable=rhel-7-server-rpms \
-        --enable=rhel-7-server-optional-rpms \
-        --enable=rhel-7-server-extras-rpms \
-        --enable=rhel-7-server-openstack-7.0-rpms
-
-    yum -y install yum-plugin-priorities yum-utils
-    for repo in rhel-7-server-openstack-7.0-rpms \
-                rhel-7-server-rpms \
-                rhel-7-server-optional-rpms \
-                rhel-7-server-extras-rpms; do
-        yum-config-manager --enable $repo --setopt="$repo.priority=1"
-    done
-
     yum -y update
     yum -y install iptables-services
     systemctl stop firewalld.service
@@ -24,7 +9,7 @@ function pre_install {
     systemctl enable iptables.service
 }
 
-function pre_reboot {
+function post_install {
     compute_ip=$1
     if cat /proc/cpuinfo | grep -E "^flags.+hypervisor" | grep -q -E "(vmx|svm)"; then
         openstack-config --set /etc/nova/nova.conf libvirt virt_type kvm
@@ -38,8 +23,8 @@ case $1 in
   pre)
     pre_install
     ;;
-  post1)
-    pre_reboot $2
+  post)
+    post_install $2
     ;;
 esac
 

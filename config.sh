@@ -3,8 +3,8 @@
 ####
 public="192.168.200.0/24"
 gateway="192.168.200.1"
-nameserver="8.8.8.8"
-pool=("192.168.200.100" "192.168.200.199")
+nameserver="192.168.200.1"
+pool=("192.168.200.50" "192.168.200.69")
 private=("192.168.101.0/24" "192.168.102.0/24")
 ####
 
@@ -50,7 +50,7 @@ function config_tenant {
     mysqladmin -f drop neutron
     mysqladmin create neutron
     neutron-db-manage --config-file /etc/neutron/neutron.conf \
-      --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade kilo
+      --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade liberty
 
     neutron-netns-cleanup
     for s in $neutron_services; do systemctl start $s; done
