@@ -1,10 +1,10 @@
 #!/bin/sh -e
 
 ####
-public="192.168.200.0/24"
-gateway="192.168.200.1"
-nameserver="8.8.8.8"
-pool=("192.168.200.100" "192.168.200.199")
+public="192.168.1.0/24"
+gateway="192.168.1.1"
+nameserver="10.68.5.26"
+pool=("192.168.1.100" "192.168.1.199")
 private=("192.168.101.0/24" "192.168.102.0/24")
 ####
 
@@ -20,6 +20,12 @@ function config_tenant {
         glance --os-image-api-version 1 image-create --name "CentOS7" \
             --disk-format qcow2 --container-format bare --is-public true \
             --location http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2
+    fi
+
+    if ! glance image-list | grep "cirros" >/dev/null 2>&1; then
+        glance --os-image-api-version 1 image-create --name "cirros" \
+            --disk-format qcow2 --container-format bare --is-public true \
+            --location http://download.cirros-cloud.net/0.3.4/cirros-0.3.4-x86_64-disk.img
     fi
 
     #
@@ -44,7 +50,7 @@ function config_tenant {
     mysqladmin -f drop neutron
     mysqladmin create neutron
     neutron-db-manage --config-file /etc/neutron/neutron.conf \
-      --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade liberty
+      --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade kilo
 
     neutron-netns-cleanup
     for s in $neutron_services; do systemctl start $s; done
@@ -102,17 +108,8 @@ function config_tenant {
 
 # main
 
-extnic=""
-while [[ -z $extnic ]]; do
-    echo -n "VM access NIC: "
-    read extnic
-done
-
-if ! ovs-vsctl list-ports br-ex | grep -q ${extnic}; then
-    ovs-vsctl add-port br-ex ${extnic}
-fi
-
 config_tenant 2>/dev/null
 
 echo
-echo "Configuration finished. Now you need to reboot the server."
+echo "Configuration finished."
+

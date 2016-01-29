@@ -1,7 +1,7 @@
 #!/bin/sh
 
 function cleanup_all {
-    services=$(systemctl list-unit-files | grep -E "(redis|mariadb|openstack|neutron|rabbitmq-server).*\s+enabled" | cut -d" " -f1)
+    services=$(systemctl list-unit-files | grep -E "(mariadb|openstack|neutron).*\s+enabled" | cut -d" " -f1)
     for s in $services; do
         systemctl stop $s
         systemctl disable $s;
@@ -12,15 +12,11 @@ function cleanup_all {
         virsh undefine $x
     done
 
-    systemctl stop iptables.service
-    iptables-save > /etc/sysconfig/iptables
-
     yum remove -y puppet "*ntp*" httpd "rabbitmq-server*" \
-        "redis*" "*openstack*" "*neutron*" "*nova*" "*keystone*" \
+        "*openstack*" "*neutron*" "*nova*" "*keystone*" \
         "*glance*" "*cinder*" "*heat*" "*ceilometer*" openvswitch \
         "*mariadb*" "*mongo*" "*memcache*" perl-DBI perl-DBD-MySQL \
-        scsi-target-utils iscsi-initiator-utils \
-        "rdo-release-*"
+        scsi-target-utils iscsi-initiator-utils redis
 
     for x in nova glance cinder keystone horizon neutron heat ceilometer;do
         rm -rf /var/lib/$x /var/log/$x /etc/$x

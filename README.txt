@@ -1,10 +1,8 @@
 *quickrdo
-This is tested with the following packages:
+This is tested with the following package:
+- openstack-packstack-2015.1-0.11.dev1589.g1d6372f.el7ost.noarch
 
-- rdo-release-liberty-2.noarch.rpm
-- openstack-packstack-7.0.0-0.7.dev1661.gaf13b7e.el7.noarch
-
-Copyright (C) 2015 Etsuji Nakai
+Copyright (C) 2016 Etsuji Nakai
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software

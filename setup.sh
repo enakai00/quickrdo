@@ -1,49 +1,69 @@
-#!/bin/sh -e
+#!/bin/sh -x
 
 export LANG=en_US.utf8
 
 function prep {
-    setenforce 0
-    sed -i.bak 's/^SELINUX=.*/SELINUX=permissive/' /etc/selinux/config
+    subscription-manager repos --disable=*
+    subscription-manager repos \
+        --enable=rhel-7-server-rpms \
+        --enable=rhel-7-server-optional-rpms \
+        --enable=rhel-7-server-extras-rpms \
+        --enable=rhel-7-server-openstack-7.0-rpms
 
-    yum update -y
-    yum install -y iptables-services
+    yum -y install yum-plugin-priorities yum-utils
+    for repo in rhel-7-server-openstack-7.0-rpms \
+                rhel-7-server-rpms \
+                rhel-7-server-optional-rpms \
+                rhel-7-server-extras-rpms; do
+        yum-config-manager --enable $repo --setopt="$repo.priority=1"
+    done
+
+    yum -y update
+    yum -y install iptables-services
     systemctl stop firewalld.service
-    systemctl mask firewalld.service
+    systemctl disable firewalld.service
     systemctl start iptables.service
     systemctl enable iptables.service
 }
 
-function rdo_install {
-    yum -y install https://repos.fedorapeople.org/repos/openstack/openstack-liberty/rdo-release-liberty-2.noarch.rpm
-    yum -y install openstack-packstack-7.0.0-0.7.dev1661.gaf13b7e.el7.noarch
+function osp_install {
+    yum -y install openstack-packstack
+
     packstack --gen-answer-file=answers.txt
     sed -i 's/CONFIG_PROVISION_DEMO=.*/CONFIG_PROVISION_DEMO=n/' answers.txt
     sed -i 's/CONFIG_SWIFT_INSTALL=.*/CONFIG_SWIFT_INSTALL=n/' answers.txt
     sed -i 's/CONFIG_NAGIOS_INSTALL=.*/CONFIG_NAGIOS_INSTALL=n/' answers.txt
-    sed -i 's/CONFIG_HEAT_INSTALL=.*/CONFIG_HEAT_INSTALL=y/' answers.txt
-    sed -i 's/CONFIG_HEAT_CLOUDWATCH_INSTALL=.*/CONFIG_HEAT_CLOUDWATCH_INSTALL=y/' answers.txt
-    sed -i 's/CONFIG_HEAT_CFN_INSTALL=.*/CONFIG_HEAT_CFN_INSTALL=y/' answers.txt
+#    sed -i 's/CONFIG_HEAT_INSTALL=.*/CONFIG_HEAT_INSTALL=y/' answers.txt
+#    sed -i 's/CONFIG_HEAT_CLOUDWATCH_INSTALL=.*/CONFIG_HEAT_CLOUDWATCH_INSTALL=y/' answers.txt
+#    sed -i 's/CONFIG_HEAT_CFN_INSTALL=.*/CONFIG_HEAT_CFN_INSTALL=y/' answers.txt
+    sed -i 's/CONFIG_CINDER_VOLUMES_CREATE=.*/CONFIG_CINDER_VOLUMES_CREATE=n/' answers.txt
     sed -i 's/CONFIG_NEUTRON_ML2_TYPE_DRIVERS=.*/CONFIG_NEUTRON_ML2_TYPE_DRIVERS=local/' answers.txt
     sed -i 's/CONFIG_NEUTRON_ML2_TENANT_NETWORK_TYPES=.*/CONFIG_NEUTRON_ML2_TENANT_NETWORK_TYPES=local/' answers.txt
 
     packstack --answer-file=answers.txt
-
-    . ~/keystonerc_admin
-    heat-manage db_sync
 }
 
 # main
 
+extnic=""
+while [[ -z $extnic ]]; do
+    echo -n "VM access NIC: "
+    read extnic
+done
+
 echo
 echo "Doing preparations..."
 echo
-prep 2>/dev/null
+#prep #2>/dev/null
 
 echo
-echo "Installing RDO with packstack...."
+echo "Installing RHEL-OSP with packstack...."
 echo
-rdo_install 2>/dev/null
+#osp_install #2>/dev/null
+
+if ! ovs-vsctl list-ports br-ex | grep -q ${extnic}; then
+    ovs-vsctl add-port br-ex ${extnic}
+fi
 
 echo
 echo "Done. Now, you need to reboot the server."
