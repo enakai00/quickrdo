@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh -e
 
 export LANG=en_US.utf8
 
@@ -54,12 +54,12 @@ done
 echo
 echo "Doing preparations..."
 echo
-#prep #2>/dev/null
+prep 2>/dev/null
 
 echo
 echo "Installing RHEL-OSP with packstack...."
 echo
-#osp_install #2>/dev/null
+osp_install 2>/dev/null
 
 if ! ovs-vsctl list-ports br-ex | grep -q ${extnic}; then
     ovs-vsctl add-port br-ex ${extnic}
