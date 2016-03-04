@@ -31,6 +31,17 @@ function rdo_install {
 
     . ~/keystonerc_admin
     heat-manage db_sync
+
+    # https://ask.openstack.org/en/question/87045/error-unable-to-retrieve-volume-limit-information/
+    CINDER_PW=$(awk -F= '/CONFIG_CINDER_KS_PW/{print $2}' answers.txt)
+    openstack-config --set /etc/cinder/cinder.conf keystone_authtoken auth_uri http://localhost:5000
+    openstack-config --set /etc/cinder/cinder.conf keystone_authtoken auth_url http://localhost:35357
+    openstack-config --set /etc/cinder/cinder.conf keystone_authtoken auth_plugin password
+    openstack-config --set /etc/cinder/cinder.conf keystone_authtoken project_domain_id default
+    openstack-config --set /etc/cinder/cinder.conf keystone_authtoken user_domain_id default
+    openstack-config --set /etc/cinder/cinder.conf keystone_authtoken project_name services
+    openstack-config --set /etc/cinder/cinder.conf keystone_authtoken username cinder
+    openstack-config --set /etc/cinder/cinder.conf keystone_authtoken password $CINDER_PW
 }
 
 # main
